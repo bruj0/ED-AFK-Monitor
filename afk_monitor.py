@@ -38,7 +38,7 @@ discord_timestamp = config['Discord'].get('Timestamp', True)
 loglevel = config['LogLevels'] if 'LogLevels' in config else []
 
 # Internals
-VERSION = "250207"
+VERSION = "250207.2"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2
@@ -294,9 +294,10 @@ def time_format(seconds: int) -> str:
 
 def header():
 	# Print header
-	print(f"{Col.CYAN}{'='*37}{Col.END}")
-	print(f'{Col.CYAN}ED AFK Monitor v{VERSION} by CMDR PSIPAB{Col.END}')
-	print(f"{Col.CYAN}{'='*37}{Col.END}\n")
+	title = f'ED AFK Monitor v{VERSION} by CMDR PSIPAB'
+	print(f"{Col.CYAN}{'='*len(title)}{Col.END}")
+	print(f'{Col.CYAN}{title}{Col.END}')
+	print(f"{Col.CYAN}{'='*len(title)}{Col.END}\n")
 	print(f'{Col.YELL}Journal folder:{Col.END} {journal_dir}')
 	print(f'{Col.YELL}Latest journal:{Col.END} {journal_file}\n')
 	print('Starting... (Press Ctrl+C to stop)\n')
