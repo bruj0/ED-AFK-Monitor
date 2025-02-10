@@ -49,6 +49,7 @@ LOGLEVEL_FALLBACK = 1
 SHIPS_EASY = ['Adder', 'Asp Explorer', 'Asp Scout', 'Cobra Mk III', 'Cobra Mk IV', 'Diamondback Explorer', 'Diamondback Scout', 'Eagle', 'Imperial Courier', 'Imperial Eagle', 'Krait Phantom', 'Sidewinder', 'Viper Mk III', 'Viper Mk IV']
 SHIPS_HARD = ['Alliance Crusader', 'Alliance Challenger', 'Alliance Chieftain', 'Anaconda', 'Federal Assault Ship', 'Federal Dropship', 'Federal Gunship', 'Fer-De-Lance', 'Imperial Clipper', 'Krait MK II', 'Python', 'Vulture']
 BAIT_MESSAGES = ['$Pirate_ThreatTooHigh', '$Pirate_NotEnoughCargo', '$Pirate_OnNoCargoFound']
+LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'Reports': 2}
 
 class Instance:
 	def __init__(self):
@@ -147,12 +148,14 @@ def logevent(msg_term, msg_discord=None, emoji='', timestamp=None, loglevel=1):
 			discordsend(f'⏸️ **Suppressing further duplicate messages**{logtime}')
 			track.dupewarn = True
 
+# Get log level from config or use default
 def getloglevel(key=None) -> int:
-	if key in loglevel:
-		return loglevel.get(key, LOGLEVEL_FALLBACK)
+	if key in loglevel and isinstance(loglevel[key], int):
+		return loglevel[key]
 	else:
-		print(f'{Col.WHITE}Warning:{Col.END} \'{key}\' not found in config section \'LogLevels\', defaulting to {LOGLEVEL_FALLBACK}')
-		return LOGLEVEL_FALLBACK
+		level = LOGLEVEL_DEFAULTS.get(key, 1)
+		print(f'{Col.WHITE}Warning:{Col.END} \'{key}\' not found in \'LogLevels\' (using default of {level})')
+		return level
 
 # Process incoming journal entries
 def processevent(line):
