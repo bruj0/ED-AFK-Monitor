@@ -77,12 +77,6 @@ class Tracking():
 session = Instance()
 track = Tracking()
 
-if 'https://discord.com' not in discord_webhook:
-	discord_enabled = False
-	print('Discord webhook not set - operating with terminal output only\n')
-elif discord_enabled:
-	webhook = SyncWebhook.from_url(config['Discord']['WebhookURL'])
-
 class Col:
 	CYAN = '\033[96m'
 	YELL = '\033[93m'
@@ -107,12 +101,20 @@ if not journal_dir.is_dir():
 journal_file = ''
 reg = r'^Journal\.\d{4}-\d{2}-\d{2}T\d{6}\.\d{2}\.log$'
 for entry in sorted(journal_dir.iterdir(), reverse=True):
-	if entry.is_file() and bool(re.search(reg, entry.name)):
+	if entry.is_file() and re.search(reg, entry.name):
 		journal_file = entry.name
 		break
 
 if not journal_file:
 	fallover(f"Directory {journal_dir} does not contain any journal file")
+
+# Check webhook appears valid before starting
+reg = r'^https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-z0-9_-]+$'
+if discord_enabled and re.search(reg, discord_webhook):
+	webhook = SyncWebhook.from_url(discord_webhook)
+elif discord_enabled:
+	discord_enabled = False
+	print('Discord webhook missing or invalid - operating with terminal output only\n')
 
 # Send a webhook message or (don't) die trying
 def discordsend(message=''):
