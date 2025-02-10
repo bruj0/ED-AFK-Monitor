@@ -6,6 +6,7 @@ from datetime import datetime, timezone
 import tomllib
 import os
 import re
+import argparse
 try:
 	from discord import SyncWebhook
 	discord_enabled = True
@@ -29,18 +30,28 @@ if configfile.is_file():
 else:
 	fallover('Config file not found - copy and rename afk_monitor.example.toml to afk_monitor.toml\n')
 
-# Get settings
-setting_journal = config['Settings'].get('JournalFolder', '')
+# Command line overrides
+parser = argparse.ArgumentParser(
+    prog='ED AFK Monitor',
+    description='Live monitoring of Elite Dangerous AFK sessions to terminal and Discord')
+parser.add_argument('-j', '--journal', help='Path to journal folder')
+parser.add_argument('-m', '--missions', type=int, help='Number of missions remaining')
+parser.add_argument('-w', '--webhook', help='Set custom webhook using webhook.WEBHOOK in config')
+args = parser.parse_args()
+print(args)
+
+# Get settings from config unless argument
+setting_journal = args.journal if args.journal is not None else config['Settings'].get('JournalFolder', '')
 setting_utc = config['Settings'].get('UseUTC', False)
 setting_fueltank = config['Settings'].get('FuelTank', 64)
-setting_missions = config['Settings'].get('MissionTotal', 20)
-discord_webhook = config['Discord'].get('WebhookURL', '')
+setting_missions = args.missions if args.missions is not None else config['Settings'].get('MissionTotal', 20)
+discord_webhook = config['Discord']['Webhook'][args.webhook] if 'Webhook' in config['Discord'] and args.webhook in config['Discord']['Webhook'] else config['Discord'].get('WebhookURL', '')
 discord_user = config['Discord'].get('UserID', '')
 discord_timestamp = config['Discord'].get('Timestamp', True)
 loglevel = config['LogLevels'] if 'LogLevels' in config else []
 
 # Internals
-VERSION = "250209"
+VERSION = "250210"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
