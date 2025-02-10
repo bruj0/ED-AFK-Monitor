@@ -33,6 +33,7 @@ else:
 setting_journal = config['Settings'].get('JournalFolder', '')
 setting_utc = config['Settings'].get('UseUTC', False)
 setting_fueltank = config['Settings'].get('FuelTank', 64)
+setting_missions = config['Settings'].get('MissionTotal', 20)
 discord_webhook = config['Discord'].get('WebhookURL', '')
 discord_user = config['Discord'].get('UserID', '')
 discord_timestamp = config['Discord'].get('Timestamp', True)
@@ -207,8 +208,9 @@ def processevent(line):
 						emoji='📝', timestamp=logtime, loglevel=getloglevel('Reports'))
 		case 'MissionRedirected' if 'Mission_Massacre' in this_json['Name']:
 			track.missioncompletes += 1
+			log = getloglevel('Missions') if track.missioncompletes != setting_missions else getloglevel('MissionsAll')
 			logevent(msg_term=f'Completed kills for a mission (x{track.missioncompletes})',
-					emoji='✅', timestamp=logtime, loglevel=getloglevel('Missions'))
+					emoji='✅', timestamp=logtime, loglevel=log)
 		case 'ReservoirReplenished' if this_json['FuelMain'] < setting_fueltank * FUEL_LOW:
 			if this_json['FuelMain'] < setting_fueltank * FUEL_CRIT:
 				col = Col.BAD

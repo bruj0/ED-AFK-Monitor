@@ -5,6 +5,8 @@
 JournalFolder = ''
 # UseUTC = true converts timestamps to UTC (in-game time), false (default) uses your local timezone
 UseUTC = false
+# MissionTotal specifies the number of mission completions required to trigger log level 'MissionsAll'
+MissionTotal = 20
 
 [Discord]
 # Use the settings below to enable Discord webhook integration
@@ -36,4 +38,5 @@ BaitValueLow = 2
 FuelLow = 2
 FuelCritical = 3
 Missions = 2
+MissionsAll = 3
 Reports = 2
