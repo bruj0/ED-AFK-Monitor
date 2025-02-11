@@ -35,23 +35,24 @@ parser = argparse.ArgumentParser(
     prog='ED AFK Monitor',
     description='Live monitoring of Elite Dangerous AFK sessions to terminal and Discord')
 parser.add_argument('-j', '--journal', help='Path to journal folder')
-parser.add_argument('-m', '--missions', type=int, help='Number of missions remaining')
 parser.add_argument('-w', '--webhook', help='Set custom webhook using webhook.WEBHOOK in config')
+parser.add_argument('-m', '--missions', type=int, help='Number of missions remaining')
+parser.add_argument('-t', '--test', action='store_true', help='Routes Discord messages to terminal and disables others')
 args = parser.parse_args()
-print(args)
 
 # Get settings from config unless argument
-setting_journal = args.journal if args.journal is not None else config['Settings'].get('JournalFolder', '')
-setting_utc = config['Settings'].get('UseUTC', False)
-setting_fueltank = config['Settings'].get('FuelTank', 64)
-setting_missions = args.missions if args.missions is not None else config['Settings'].get('MissionTotal', 20)
-discord_webhook = config['Discord']['Webhook'][args.webhook] if 'Webhook' in config['Discord'] and args.webhook in config['Discord']['Webhook'] else config['Discord'].get('WebhookURL', '')
-discord_user = config['Discord'].get('UserID', '')
-discord_timestamp = config['Discord'].get('Timestamp', True)
-loglevel = config['LogLevels'] if 'LogLevels' in config else []
+setting_journal = args.journal if args.journal is not None else config.get('Settings', {}).get('JournalFolder')
+setting_utc = config.get('Settings', {}).get('UseUTC', False)
+setting_fueltank = config.get('Settings', {}).get('FuelTank', 64)
+setting_missions = args.missions if args.missions is not None else config.get('Settings', {}).get('MissionTotal', 20)
+discord_webhook = config['Discord']['Webhook'][args.webhook] if config.get('Discord', {}).get('Webhook', {}).get(args.webhook) else config.get('Discord', {}).get('WebhookURL', '')
+discord_user = config.get('Discord', {}).get('UserID', 0)
+discord_timestamp = config.get('Discord', {}).get('Timestamp', True)
+loglevel = config.get('LogLevels', {})
+test_mode = args.test
 
 # Internals
-VERSION = "250210"
+VERSION = "250211"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -60,7 +61,6 @@ SHIPS_EASY = ['Adder', 'Asp Explorer', 'Asp Scout', 'Cobra Mk III', 'Cobra Mk IV
 SHIPS_HARD = ['Alliance Crusader', 'Alliance Challenger', 'Alliance Chieftain', 'Anaconda', 'Federal Assault Ship', 'Federal Dropship', 'Federal Gunship', 'Fer-De-Lance', 'Imperial Clipper', 'Krait MK II', 'Python', 'Vulture']
 BAIT_MESSAGES = ['$Pirate_ThreatTooHigh', '$Pirate_NotEnoughCargo', '$Pirate_OnNoCargoFound']
 LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'Reports': 2}
-test_mode = False
 
 class Instance:
 	def __init__(self):
