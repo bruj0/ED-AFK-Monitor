@@ -120,7 +120,7 @@ if not journal_file:
 	fallover(f"Directory {journal_dir} does not contain any journal file")
 
 # Check webhook appears valid before starting
-reg = r'^https:\/\/discord\.com\/api\/webhooks\/\d+\/[A-z0-9_-]+$'
+reg = r'^https:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[A-z0-9_-]+$'
 if discord_enabled and re.search(reg, discord_webhook):
 	webhook = SyncWebhook.from_url(discord_webhook)
 elif discord_enabled:
