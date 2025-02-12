@@ -19,6 +19,18 @@ def fallover(message):
 	input('Press ENTER to exit')
 	sys.exit()
 
+# Internals
+DISCORD_TEST = False
+VERSION = "250212"
+GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
+DUPE_MAX = 5
+FUEL_LOW = 0.2		# 20%
+FUEL_CRIT = 0.1		# 10%
+SHIPS_EASY = ['Adder', 'Asp Explorer', 'Asp Scout', 'Cobra Mk III', 'Cobra Mk IV', 'Diamondback Explorer', 'Diamondback Scout', 'Eagle', 'Imperial Courier', 'Imperial Eagle', 'Krait Phantom', 'Sidewinder', 'Viper Mk III', 'Viper Mk IV']
+SHIPS_HARD = ['Alliance Crusader', 'Alliance Challenger', 'Alliance Chieftain', 'Anaconda', 'Federal Assault Ship', 'Federal Dropship', 'Federal Gunship', 'Fer-de-Lance', 'Imperial Clipper', 'Krait MK II', 'Python', 'Vulture']
+BAIT_MESSAGES = ['$Pirate_ThreatTooHigh', '$Pirate_NotEnoughCargo', '$Pirate_OnNoCargoFound']
+LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'Reports': 2}
+
 # Load config file
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
 	configfile = Path(__file__).parents[1] / 'afk_monitor.toml'
@@ -37,7 +49,7 @@ parser = argparse.ArgumentParser(
 parser.add_argument('-j', '--journal', help='Path to journal folder')
 parser.add_argument('-w', '--webhook', help='Set custom webhook using webhook.WEBHOOK in config')
 parser.add_argument('-m', '--missions', type=int, help='Number of missions remaining')
-parser.add_argument('-t', '--test', action='store_true', help='Routes Discord messages to terminal and disables others')
+parser.add_argument('-t', '--test', action='store_true', default=None, help='Re-routes Discord messages to terminal')
 args = parser.parse_args()
 
 # Get settings from config unless argument
@@ -49,18 +61,7 @@ discord_webhook = config['Discord']['Webhook'][args.webhook] if config.get('Disc
 discord_user = config.get('Discord', {}).get('UserID', 0)
 discord_timestamp = config.get('Discord', {}).get('Timestamp', True)
 loglevel = config.get('LogLevels', {})
-test_mode = args.test if args.test is not None else False
-
-# Internals
-VERSION = "250211"
-GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
-DUPE_MAX = 5
-FUEL_LOW = 0.2		# 20%
-FUEL_CRIT = 0.1		# 10%
-SHIPS_EASY = ['Adder', 'Asp Explorer', 'Asp Scout', 'Cobra Mk III', 'Cobra Mk IV', 'Diamondback Explorer', 'Diamondback Scout', 'Eagle', 'Imperial Courier', 'Imperial Eagle', 'Krait Phantom', 'Sidewinder', 'Viper Mk III', 'Viper Mk IV']
-SHIPS_HARD = ['Alliance Crusader', 'Alliance Challenger', 'Alliance Chieftain', 'Anaconda', 'Federal Assault Ship', 'Federal Dropship', 'Federal Gunship', 'Fer-de-Lance', 'Imperial Clipper', 'Krait MK II', 'Python', 'Vulture']
-BAIT_MESSAGES = ['$Pirate_ThreatTooHigh', '$Pirate_NotEnoughCargo', '$Pirate_OnNoCargoFound']
-LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'Reports': 2}
+discord_test = args.test if args.test is not None else DISCORD_TEST
 
 class Instance:
 	def __init__(self):
@@ -129,13 +130,13 @@ elif discord_enabled:
 
 # Send a webhook message or (don't) die trying
 def discordsend(message=''):
-	if discord_enabled and message and not test_mode:
+	if discord_enabled and message and not discord_test:
 		try:
 			webhook.send(message)
 		except Exception as e:
 			print(f"Webhook send went wrong: {e}")
-	elif discord_enabled and message and test_mode:
-		print(f'DISCORD: {message}')
+	elif discord_enabled and message and discord_test:
+		print(f'{Col.WHITE}DISCORD:{Col.END} {message}')
 
 # Log events
 def logevent(msg_term, msg_discord=None, emoji='', timestamp=None, loglevel=1):
@@ -145,7 +146,7 @@ def logevent(msg_term, msg_discord=None, emoji='', timestamp=None, loglevel=1):
 	else:
 		logtime = datetime.now(timezone.utc) if setting_utc else datetime.now()
 	logtime = datetime.strftime(logtime, '%H:%M:%S')
-	if loglevel > 0 and not test_mode: print(f'[{logtime}]{emoji} {msg_term}')
+	if loglevel > 0 and not discord_test: print(f'[{logtime}]{emoji} {msg_term}')
 	track.logged +=1
 	if discord_enabled and loglevel > 1:
 		if track.dupemsg == msg_term:
