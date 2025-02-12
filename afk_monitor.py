@@ -46,21 +46,34 @@ else:
 parser = argparse.ArgumentParser(
     prog='ED AFK Monitor',
     description='Live monitoring of Elite Dangerous AFK sessions to terminal and Discord')
-parser.add_argument('-j', '--journal', help='Path to journal folder')
-parser.add_argument('-w', '--webhook', help='Set custom webhook using webhook.WEBHOOK in config')
-parser.add_argument('-m', '--missions', type=int, help='Number of missions remaining')
+parser.add_argument('-p', '--profile', help='Custom profile for config settings')
+parser.add_argument('-j', '--journal', help='Override for path to journal folder')
+parser.add_argument('-w', '--webhook', help='Override for Discord webhook URL')
+parser.add_argument('-m', '--missions', type=int, help='Set number of missions remaining')
 parser.add_argument('-t', '--test', action='store_true', default=None, help='Re-routes Discord messages to terminal')
 args = parser.parse_args()
 
+# Get a setting from config
+def getconfig(category, setting, default=None):
+	if profile and config.get(profile, {}).get(category, {}).get(setting):
+		return config.get(profile, {}).get(category, {}).get(setting)
+	elif config.get(category, {}).get(setting):
+		return config.get(category, {}).get(setting)
+	else:
+		return default if default is not None else None
+
 # Get settings from config unless argument
-setting_journal = args.journal if args.journal is not None else config.get('Settings', {}).get('JournalFolder')
-setting_utc = config.get('Settings', {}).get('UseUTC', False)
-setting_fueltank = config.get('Settings', {}).get('FuelTank', 64)
-setting_missions = args.missions if args.missions is not None else config.get('Settings', {}).get('MissionTotal', 20)
-discord_webhook = config['Discord']['Webhook'][args.webhook] if config.get('Discord', {}).get('Webhook', {}).get(args.webhook) else config.get('Discord', {}).get('WebhookURL', '')
-discord_user = config.get('Discord', {}).get('UserID', 0)
-discord_timestamp = config.get('Discord', {}).get('Timestamp', True)
-loglevel = config.get('LogLevels', {})
+profile = args.profile if args.profile is not None else None
+setting_journal = args.journal if args.journal is not None else getconfig('Settings', 'JournalFolder')
+setting_utc = getconfig('Settings', 'UseUTC', False)
+setting_fueltank = getconfig('Settings', 'FuelTank', 64)
+setting_missions = args.missions if args.missions is not None else getconfig('Settings', 'MissionTotal', 20)
+discord_webhook = args.webhook if args.webhook is not None else getconfig('Discord', 'WebhookURL', '')
+discord_user = getconfig('Discord', 'UserID', 0)
+discord_timestamp = getconfig('Discord', 'Timestamp', True)
+loglevel = {}
+for level in LOGLEVEL_DEFAULTS:
+	loglevel[level] = getconfig('LogLevels', level, LOGLEVEL_DEFAULTS[level])
 discord_test = args.test if args.test is not None else DISCORD_TEST
 
 class Instance:
@@ -126,6 +139,7 @@ if discord_enabled and re.search(reg, discord_webhook):
 	webhook = SyncWebhook.from_url(discord_webhook)
 elif discord_enabled:
 	discord_enabled = False
+	discord_test = False
 	print('Discord webhook missing or invalid - operating with terminal output only\n')
 
 # Send a webhook message or (don't) die trying
