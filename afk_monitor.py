@@ -20,6 +20,7 @@ def fallover(message):
 	sys.exit()
 
 # Internals
+DEBUG = False
 DISCORD_TEST = False
 VERSION = "250212"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
@@ -51,6 +52,8 @@ parser.add_argument('-j', '--journal', help='Override for path to journal folder
 parser.add_argument('-w', '--webhook', help='Override for Discord webhook URL')
 parser.add_argument('-m', '--missions', type=int, help='Set number of missions remaining')
 parser.add_argument('-t', '--test', action='store_true', default=None, help='Re-routes Discord messages to terminal')
+parser.add_argument('-d', '--debug', action='store_true', default=None, help='Print information for debugging')
+
 args = parser.parse_args()
 
 # Get a setting from config
@@ -75,6 +78,9 @@ loglevel = {}
 for level in LOGLEVEL_DEFAULTS:
 	loglevel[level] = getconfig('LogLevels', level, LOGLEVEL_DEFAULTS[level])
 discord_test = args.test if args.test is not None else DISCORD_TEST
+debug = args.debug if args.debug is not None else DEBUG
+
+if debug: print(f'Arguments: {args}\nConfig: {config}\nJournal: {setting_journal}\nWebhook: {discord_webhook}\nMissions: {setting_missions}\nLog levels: {loglevel}')
 
 class Instance:
 	def __init__(self):
@@ -153,7 +159,7 @@ def discordsend(message=''):
 		print(f'{Col.WHITE}DISCORD:{Col.END} {message}')
 
 # Log events
-def logevent(msg_term, msg_discord=None, emoji='', timestamp=None, loglevel=1):
+def logevent(msg_term, msg_discord=None, emoji='', timestamp=None, loglevel=2):
 	loglevel = int(loglevel)
 	if timestamp:
 		logtime = timestamp if setting_utc else timestamp.astimezone()
