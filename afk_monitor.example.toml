@@ -40,3 +40,14 @@ FuelCritical = 3
 Missions = 2
 MissionsAll = 3
 Reports = 2
+
+# Custom profiles (advanced)
+# You can set additional profiles to override settings as per the example below
+# Profiles are loaded by passing -p <profilename> via command line or shortcut
+#
+# [MyAltProfile]
+# Discord.WebhookURL = "https://discord.com/api/webhooks/myaltwebhook"
+# LogLevels.ScanHard = 1
+#
+# Loading the above with {afk_monitor.py -p MyAltProfile} will override those two settings
+# This feature is most useful for those with multiple accounts or PCs
