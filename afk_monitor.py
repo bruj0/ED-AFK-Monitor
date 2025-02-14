@@ -58,9 +58,9 @@ args = parser.parse_args()
 
 # Get a setting from config
 def getconfig(category, setting, default=None):
-	if profile and config.get(profile, {}).get(category, {}).get(setting):
+	if profile and config.get(profile, {}).get(category, {}).get(setting) is not None:
 		return config.get(profile, {}).get(category, {}).get(setting)
-	elif config.get(category, {}).get(setting):
+	elif config.get(category, {}).get(setting) is not None:
 		return config.get(category, {}).get(setting)
 	else:
 		return default if default is not None else None
