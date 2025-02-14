@@ -74,6 +74,7 @@ setting_missions = args.missions if args.missions is not None else getconfig('Se
 discord_webhook = args.webhook if args.webhook is not None else getconfig('Discord', 'WebhookURL', '')
 discord_user = getconfig('Discord', 'UserID', 0)
 discord_timestamp = getconfig('Discord', 'Timestamp', True)
+discord_identity = getconfig('Discord', 'Identity', True)
 loglevel = {}
 for level in LOGLEVEL_DEFAULTS:
 	loglevel[level] = getconfig('LogLevels', level, LOGLEVEL_DEFAULTS[level])
@@ -152,7 +153,10 @@ elif discord_enabled:
 def discordsend(message=''):
 	if discord_enabled and message and not discord_test:
 		try:
-			webhook.send(message)
+			if discord_identity:
+				webhook.send(content=message, username="ED AFK Monitor", avatar_url="https://cdn.discordapp.com/attachments/1339930614064877570/1339931974227460108/t10.png")
+			else:
+				webhook.send(content=message)
 		except Exception as e:
 			print(f"Webhook send went wrong: {e}")
 	elif discord_enabled and message and discord_test:

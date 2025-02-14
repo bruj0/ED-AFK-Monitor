@@ -3,7 +3,7 @@
 # To override this change JournalFolder below, e.g.:
 # JournalFolder = '\\SOMENETWORKSHARE\Users\me\Saved Games\Frontier Developments\Elite Dangerous'
 JournalFolder = ''
-# UseUTC = true converts timestamps to UTC (in-game time), false (default) uses your local timezone
+# UseUTC = false (default) uses local timezone, set true for UTC (in-game time)
 UseUTC = false
 # MissionTotal specifies the number of mission completions required to trigger log level 'MissionsAll'
 MissionTotal = 20
@@ -18,6 +18,8 @@ WebhookURL = ''
 UserID = 0
 # Timestamp = true (default) appends a timestamp to Discord messages, set false to disable
 Timestamp = true
+# Identity = true (default) provides default name and avatar for webhook, set false to use user-set
+Identity = true
 
 [LogLevels]
 # 0 = None
