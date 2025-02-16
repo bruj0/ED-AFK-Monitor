@@ -70,6 +70,7 @@ profile = args.profile if args.profile is not None else None
 setting_journal = args.journal if args.journal is not None else getconfig('Settings', 'JournalFolder')
 setting_utc = getconfig('Settings', 'UseUTC', False)
 setting_fueltank = getconfig('Settings', 'FuelTank', 64)
+setting_lowkillrate = getconfig('Settings', 'LowKillRate', 20)
 setting_missions = args.missions if args.missions is not None else getconfig('Settings', 'MissionTotal', 20)
 discord_webhook = args.webhook if args.webhook is not None else getconfig('Discord', 'WebhookURL', '')
 discord_user = getconfig('Discord', 'UserID', 0)
@@ -247,8 +248,9 @@ def processevent(line):
 			if session.kills % 10 == 0 and this_json['event'] == 'Bounty':
 				avgseconds = session.killstime / (session.kills - 1)
 				kills_hour = round(3600 / avgseconds, 1)
+				log = getloglevel('Reports') if kills_hour > setting_lowkillrate else getloglevel('Reports')+1
 				logevent(msg_term=f'Session kills: {session.kills} (Avg: {time_format(avgseconds)} | {kills_hour}/h)',
-						emoji='📝', timestamp=logtime, loglevel=getloglevel('Reports'))
+						emoji='📝', timestamp=logtime, loglevel=log)
 		case 'MissionRedirected' if 'Mission_Massacre' in this_json['Name']:
 			track.missioncompletes += 1
 			log = getloglevel('Missions') if track.missioncompletes != setting_missions else getloglevel('MissionsAll')

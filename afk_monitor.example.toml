@@ -7,6 +7,8 @@ JournalFolder = ''
 UseUTC = false
 # MissionTotal specifies the number of mission completions required to trigger log level 'MissionsAll'
 MissionTotal = 20
+# LowKillRate is a kills/hour threshold; if average drops below, log level 'Reports' is raised by 1 (Default: 20, 0 to disable)
+LowKillRate = 20
 
 [Discord]
 # Use the settings below to enable Discord webhook integration
