@@ -22,7 +22,7 @@ def fallover(message):
 # Internals
 DEBUG = False
 DISCORD_TEST = False
-VERSION = "250212"
+VERSION = "250217.1"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -363,7 +363,7 @@ if __name__ == '__main__':
 			emoji='📖', loglevel=2)
 
 	# Open journal from end and watch for new lines
-	with (journal_dir / journal_file).open() as file:
+	with open(journal_dir / journal_file, encoding="utf-8") as file:
 		file.seek(0, 2)
 
 		try:
