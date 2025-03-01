@@ -22,7 +22,7 @@ def fallover(message):
 # Internals
 DEBUG = False
 DISCORD_TEST = False
-VERSION = "250217.1"
+VERSION = "250301"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -304,8 +304,11 @@ def processevent(line):
 		case 'Music' if this_json['MusicTrack'] == 'MainMenu':
 			logevent(msg_term='Exited to main menu',
 				emoji='🚪', timestamp=logtime, loglevel=2)
-		case 'Commander':
-			logevent(msg_term=f"Started new session for CMDR {this_json['Name']}",
+		case 'LoadGame':
+			ship = this_json['Ship'] if 'Ship_Localised' not in this_json else this_json['Ship_Localised']
+			mode = 'Private' if this_json['GameMode'] == 'Group' else this_json['GameMode']
+			logevent(msg_term=f"Loaded CMDR {this_json['Commander']} ({ship}) [{mode}]",
+					msg_discord=f"**Loaded CMDR {this_json['Commander']}** ({ship}) [{mode}]",
 					emoji='🔄', timestamp=logtime, loglevel=2)
 			session.reset()
 		case 'SupercruiseDestinationDrop' if '$MULTIPLAYER' in this_json['Type']:
