@@ -201,8 +201,13 @@ def getloglevel(key=None) -> int:
 
 # Process incoming journal entries
 def processevent(line):
-	this_json = json.loads(line)
-	logtime = datetime.fromisoformat(this_json['timestamp'])
+	try:
+		this_json = json.loads(line)
+	except ValueError:
+		print(f'{Col.WHITE}Warning:{Col.END} Journal parsing error, skipping line')
+		return
+
+	logtime = datetime.fromisoformat(this_json['timestamp']) if 'timestamp' in this_json else None
 
 	match this_json['event']:
 		case 'ShipTargeted' if 'Ship' in this_json:
