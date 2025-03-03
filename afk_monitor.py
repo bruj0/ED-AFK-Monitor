@@ -327,7 +327,7 @@ def processevent(line):
 			logevent(msg_term=f"Dropped at {this_json['Type_Localised']}",
 					emoji='🚀', timestamp=logtime, loglevel=2)
 			session.reset()
-		case 'ReceiveText':
+		case 'ReceiveText' if this_json['Channel'] == 'npc':
 			if any(x in this_json['Message'] for x in BAIT_MESSAGES):
 				logevent(msg_term=f'{Col.WARN}Pirate didn\'t engage due to insufficient cargo value{Col.END}',
 			 			msg_discord='**Pirate didn\'t engage due to insufficient cargo value**',
