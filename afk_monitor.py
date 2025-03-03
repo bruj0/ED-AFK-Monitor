@@ -22,7 +22,7 @@ def fallover(message):
 # Internals
 DEBUG = False
 DISCORD_TEST = False
-VERSION = "250301"
+VERSION = "250303"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -101,6 +101,7 @@ class Tracking():
 	def __init__(self):
 		self.fighterhull = 0
 		self.logged = 0
+		self.missionsactive = None
 		self.missioncompletes = 0
 		self.lastevent = ''
 		self.dupemsg = ''
@@ -253,8 +254,14 @@ def processevent(line):
 						emoji='📝', timestamp=logtime, loglevel=log)
 		case 'MissionRedirected' if 'Mission_Massacre' in this_json['Name']:
 			track.missioncompletes += 1
-			log = getloglevel('Missions') if track.missioncompletes != setting_missions else getloglevel('MissionsAll')
-			logevent(msg_term=f'Completed kills for a mission (x{track.missioncompletes})',
+			if track.missionsactive is not None:
+				missions = f'{track.missioncompletes}/{track.missionsactive}'
+				log = getloglevel('Missions') if track.missionsactive != track.missioncompletes else getloglevel('MissionsAll')
+			else:
+				missions = f'x{track.missioncompletes}'
+				log = getloglevel('Missions') if track.missioncompletes != setting_missions else getloglevel('MissionsAll')
+			logevent(msg_term=f'Completed kills for a mission ({missions})',
+					msg_discord=f'**Completed kills for a mission** ({missions})',
 					emoji='✅', timestamp=logtime, loglevel=log)
 		case 'ReservoirReplenished' if this_json['FuelMain'] < setting_fueltank * FUEL_LOW:
 			if this_json['FuelMain'] < setting_fueltank * FUEL_CRIT:
@@ -325,6 +332,15 @@ def processevent(line):
 			logevent(msg_term=f'{Col.BAD}Cargo ejected!{Col.END} ({name})',
 					msg_discord=f'**Cargo ejected!** ({name})',
 					emoji='📦', timestamp=logtime, loglevel=getloglevel('CargoLost'))
+		case 'Missions' if 'Active' in this_json:
+			track.missionsactive = 0
+			for mission in this_json['Active']:
+				if 'Mission_Massacre' in mission['Name'] and mission['Expires'] > 0:
+					track.missionsactive += 1
+		case 'MissionAccepted' if 'Mission_Massacre' in this_json['Name']:
+			if track.missionsactive: track.missionsactive += 1
+		case 'MissionAbandoned' | 'MissionCompleted' | 'MissionFailed' if 'Mission_Massacre' in this_json['Name']:
+			if track.missionsactive: track.missionsactive -= 1
 		case 'Shutdown':
 			logevent(msg_term='Quit to desktop',
 					emoji='🛑', timestamp=logtime, loglevel=2)
