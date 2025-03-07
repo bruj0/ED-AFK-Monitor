@@ -340,10 +340,10 @@ def processevent(line):
 				logevent(msg_term=f'{Col.WARN}Pirate didn\'t engage due to insufficient cargo value{Col.END}',
 			 			msg_discord='**Pirate didn\'t engage due to insufficient cargo value**',
 						emoji='🎣', timestamp=logtime, loglevel=getloglevel('BaitValueLow'))
-		case 'EjectCargo' if not this_json["Abandoned"]:
+		case 'EjectCargo' if not this_json["Abandoned"] and this_json['Count'] == 1:
 			name = this_json['Type_Localised'] if 'Type_Localised' in this_json else this_json['Type'].title()
-			logevent(msg_term=f'{Col.BAD}Cargo ejected!{Col.END} ({name})',
-					msg_discord=f'**Cargo ejected!** ({name})',
+			logevent(msg_term=f'{Col.BAD}Cargo stolen!{Col.END} ({name})',
+					msg_discord=f'**Cargo stolen!** ({name})',
 					emoji='📦', timestamp=logtime, loglevel=getloglevel('CargoLost'))
 		case 'Missions' if 'Active' in this_json and not track.missions:
 			track.missionsactive.clear()
