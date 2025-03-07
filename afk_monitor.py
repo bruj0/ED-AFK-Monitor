@@ -275,7 +275,6 @@ def processevent(line):
 				missions = f'x{track.missionredirects}'
 				log = getloglevel('Missions') if track.missionredirects != setting_missions else getloglevel('MissionsAll')
 			logevent(msg_term=f'Completed kills for a mission ({missions})',
-					msg_discord=f'**Completed kills for a mission** ({missions})',
 					emoji='✅', timestamp=logtime, loglevel=log)
 		case 'ReservoirReplenished' if this_json['FuelMain'] < setting_fueltank * FUEL_LOW:
 			if this_json['FuelMain'] < setting_fueltank * FUEL_CRIT:
@@ -346,20 +345,24 @@ def processevent(line):
 			logevent(msg_term=f'{Col.BAD}Cargo ejected!{Col.END} ({name})',
 					msg_discord=f'**Cargo ejected!** ({name})',
 					emoji='📦', timestamp=logtime, loglevel=getloglevel('CargoLost'))
-		case 'Missions' if 'Active' in this_json:
+		case 'Missions' if 'Active' in this_json and not track.missions:
 			track.missionsactive.clear()
-			if not track.missions: track.missionredirects = 0
+			track.missionredirects = 0
 			for mission in this_json['Active']:
 				if 'Mission_Massacre' in mission['Name'] and mission['Expires'] > 0:
 					track.missionsactive.append(mission['MissionID'])
 			if len(track.missionsactive) > 0: track.missions = True
-			debug(f'{this_json['event']}: {len(track.missionsactive)} (Missions)')
+			logevent(msg_term=f'Missions loaded (active massacres: {len(track.missionsactive)})',
+					emoji='🎯', timestamp=logtime, loglevel=getloglevel('Missions'))
 		case 'MissionAccepted' if 'Mission_Massacre' in this_json['Name'] and track.missions:
 			track.missionsactive.append(this_json['MissionID'])
-			debug(f'Missions: {len(track.missionsactive)} (MissionAccepted)')
+			logevent(msg_term=f'Accepted massacre mission (active: {len(track.missionsactive)})',
+					emoji='🎯', timestamp=logtime, loglevel=getloglevel('Missions'))
 		case 'MissionAbandoned' | 'MissionCompleted' | 'MissionFailed' if track.missions and this_json['MissionID'] in track.missionsactive:
 			track.missionsactive.remove(this_json['MissionID'])
-			debug(f'Missions: {len(track.missionsactive)} ({this_json['event']})')
+			event = this_json['event'][7:].lower()
+			logevent(msg_term=f'Massacre mission {event} (active: {len(track.missionsactive)})',
+					emoji='🎯', timestamp=logtime, loglevel=getloglevel('Missions'))
 		case 'Shutdown':
 			logevent(msg_term='Quit to desktop',
 					emoji='🛑', timestamp=logtime, loglevel=2)
