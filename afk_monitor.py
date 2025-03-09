@@ -22,7 +22,7 @@ def fallover(message):
 # Internals
 DEBUG_MODE = False
 DISCORD_TEST = False
-VERSION = "250307"
+VERSION = "250309"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -30,7 +30,7 @@ FUEL_CRIT = 0.1		# 10%
 SHIPS_EASY = ['Adder', 'Asp Explorer', 'Asp Scout', 'Cobra Mk III', 'Cobra Mk IV', 'Diamondback Explorer', 'Diamondback Scout', 'Eagle', 'Imperial Courier', 'Imperial Eagle', 'Krait Phantom', 'Sidewinder', 'Viper Mk III', 'Viper Mk IV']
 SHIPS_HARD = ['Alliance Crusader', 'Alliance Challenger', 'Alliance Chieftain', 'Anaconda', 'Federal Assault Ship', 'Federal Dropship', 'Federal Gunship', 'Fer-de-Lance', 'Imperial Clipper', 'Krait MK II', 'Python', 'Vulture', 'Type-10 Defender']
 BAIT_MESSAGES = ['$Pirate_ThreatTooHigh', '$Pirate_NotEnoughCargo', '$Pirate_OnNoCargoFound']
-LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'Reports': 2}
+LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'Reports': 2, 'Inactivity': 3}
 
 # Load config file
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
@@ -71,6 +71,7 @@ setting_journal = args.journal if args.journal is not None else getconfig('Setti
 setting_utc = getconfig('Settings', 'UseUTC', False)
 setting_fueltank = getconfig('Settings', 'FuelTank', 64)
 setting_lowkillrate = getconfig('Settings', 'LowKillRate', 20)
+setting_inactivitymax = getconfig('Settings', 'InactivityMax', 15)
 setting_missions = args.missions if args.missions is not None else getconfig('Settings', 'MissionTotal', 20)
 discord_webhook = args.webhook if args.webhook is not None else getconfig('Discord', 'WebhookURL', '')
 discord_user = getconfig('Discord', 'UserID', 0)
@@ -112,6 +113,8 @@ class Tracking():
 		self.dupemsg = ''
 		self.duperepeats = 1
 		self.dupewarn = False
+		self.lastactivity = None
+		self.inactivitywarn = True
 
 session = Instance()
 track = Tracking()
@@ -194,6 +197,7 @@ def logevent(msg_term, msg_discord=None, emoji='', timestamp=None, loglevel=2):
 		elif not track.dupewarn:
 			discordsend(f'⏸️ **Suppressing further duplicate messages**{logtime}')
 			track.dupewarn = True
+	track.inactivitywarn = True
 
 # Get log level from config or use default
 def getloglevel(key=None) -> int:
@@ -324,6 +328,7 @@ def processevent(line):
 		case 'Music' if this_json['MusicTrack'] == 'MainMenu':
 			logevent(msg_term='Exited to main menu',
 				emoji='🚪', timestamp=logtime, loglevel=2)
+			track.inactivitywarn = False
 		case 'LoadGame':
 			ship = this_json['Ship'] if 'Ship_Localised' not in this_json else this_json['Ship_Localised']
 			mode = 'Private' if this_json['GameMode'] == 'Group' else this_json['GameMode']
@@ -402,7 +407,9 @@ if __name__ == '__main__':
 	logevent(msg_term=f'Monitor started ({journal_file})',
 			msg_discord=f'**Monitor started** ({journal_file})',
 			emoji='📖', loglevel=2)
-
+	
+	track.lastactivity = datetime.now()
+	
 	# Open journal from end and watch for new lines
 	with open(journal_dir / journal_file, encoding="utf-8") as file:
 		file.seek(0, 2)
@@ -412,9 +419,15 @@ if __name__ == '__main__':
 				line = file.readline()
 				if not line:
 					time.sleep(1)
+					if setting_inactivitymax and track.inactivitywarn and (datetime.now() - track.lastactivity).total_seconds() > (setting_inactivitymax * 60):
+						logevent(msg_term=f'No journal activity detected for {setting_inactivitymax} minutes',
+								emoji='⚠️', loglevel=getloglevel('Inactivity'))
+						track.inactivitywarn = False
 					continue
 
 				processevent(line)
+				track.lastactivity = datetime.now()
+
 		except (KeyboardInterrupt, SystemExit):
 			logevent(msg_term=f'Monitor stopped ({journal_file})',
 					msg_discord=f'**Monitor stopped** ({journal_file})',

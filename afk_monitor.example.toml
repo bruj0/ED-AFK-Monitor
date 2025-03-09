@@ -9,6 +9,8 @@ UseUTC = false
 MissionTotal = 20
 # LowKillRate is a kills/hour threshold; if average drops below, log level 'Reports' is raised by 1 (Default: 20, 0 to disable)
 LowKillRate = 20
+# InactivityMax is time in minutes between journal updates before logging a warning (Default: 15, 0 to disable)
+InactivityMax = 15
 
 [Discord]
 # Use the settings below to enable Discord webhook integration
@@ -44,6 +46,7 @@ FuelCritical = 3
 Missions = 2
 MissionsAll = 3
 Reports = 2
+Inactivity = 3
 
 # Custom profiles (advanced)
 # You can set additional profiles to override settings as per the example below
