@@ -22,7 +22,7 @@ def fallover(message):
 # Internals
 DEBUG_MODE = False
 DISCORD_TEST = False
-VERSION = "250310.1"
+VERSION = "250311"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -73,6 +73,8 @@ setting_fueltank = getconfig('Settings', 'FuelTank', 64)
 setting_lowkillrate = getconfig('Settings', 'LowKillRate', 20)
 setting_inactivitymax = getconfig('Settings', 'InactivityMax', 15)
 setting_missions = args.missions if args.missions is not None else getconfig('Settings', 'MissionTotal', 20)
+setting_bountyfaction = getconfig('Settings', 'BountyFaction', True)
+setting_bountyvalue = getconfig('Settings', 'BountyValue', False)
 discord_webhook = args.webhook if args.webhook is not None else getconfig('Discord', 'WebhookURL', '')
 discord_user = getconfig('Discord', 'UserID', 0)
 discord_timestamp = getconfig('Discord', 'Timestamp', True)
@@ -259,8 +261,11 @@ def processevent(line):
 				col = Col.HARD
 				log = getloglevel('KillHard')
 				hard = ' ☠️'
-			logevent(msg_term=f"{col}Kill{Col.END}: {ship} ({this_json['VictimFaction']}){killtime_t}",
-					msg_discord=f"**{ship}**{hard} ({this_json['VictimFaction']}){killtime_d}",
+			
+			bountyvalue = f' ({this_json['Rewards'][0]['Reward']:,}cr)' if setting_bountyvalue else ''
+			bountyfaction = f' ({this_json['VictimFaction']})' if setting_bountyfaction else ''
+			logevent(msg_term=f"{col}Kill{Col.END}: {ship}{bountyfaction}{bountyvalue}{killtime_t}",
+					msg_discord=f"**{ship}**{hard}{bountyfaction}{bountyvalue}{killtime_d}",
 					emoji='💥', timestamp=logtime, loglevel=log)
 
 			if session.kills % 10 == 0 and this_json['event'] == 'Bounty':
