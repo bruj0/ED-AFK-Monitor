@@ -22,7 +22,7 @@ def fallover(message):
 # Internals
 DEBUG_MODE = False
 DISCORD_TEST = False
-VERSION = "250310"
+VERSION = "250310.1"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -269,9 +269,9 @@ def processevent(line):
 				avgbounty = session.bounties // session.kills
 				bounties_hour = round(3600 / (session.killstime / session.bounties))
 				log = getloglevel('SummaryKills') if kills_hour > setting_lowkillrate else getloglevel('SummaryKills')+1
-				logevent(msg_term=f'Session kills: {session.kills} (Avg: {time_format(avgseconds)} | {kills_hour}/h)',
+				logevent(msg_term=f'Session kills: {session.kills} (Avg: {time_format(avgseconds)} | {kills_hour}/hr)',
 						emoji='📝', timestamp=logtime, loglevel=log)
-				logevent(msg_term=f'Session bounties: {session.bounties:,} cr (Avg: {avgbounty:,}/kill | {bounties_hour:,}/h)',
+				logevent(msg_term=f'Session bounties: {num_format(session.bounties)} (Avg: {num_format(avgbounty)}/kill | {num_format(bounties_hour)}/hr)',
 						emoji='📝', timestamp=logtime, loglevel=getloglevel('SummaryBounties'))
 		case 'MissionRedirected' if 'Mission_Massacre' in this_json['Name']:
 			track.missionredirects += 1
@@ -393,6 +393,16 @@ def time_format(seconds: int) -> str:
 			return '{:d}m{:d}s'.format(m, s)
 		else:
 			return '{:d}s'.format(s)
+
+def num_format(number: int) -> str:
+    if number is not None:
+        number = int(number)
+        if number >= 999_500:
+            return f'{round(number / 1_000_000, 1):g}m'
+        elif number >= 1_000:
+            return f'{round(number / 1_000):g}k'
+        else:
+            return number
 
 def header():
 	# Print header
