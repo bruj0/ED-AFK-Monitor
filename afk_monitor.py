@@ -30,7 +30,7 @@ FUEL_CRIT = 0.1		# 10%
 SHIPS_EASY = ['Adder', 'Asp Explorer', 'Asp Scout', 'Cobra Mk III', 'Cobra Mk IV', 'Diamondback Explorer', 'Diamondback Scout', 'Eagle', 'Imperial Courier', 'Imperial Eagle', 'Krait Phantom', 'Sidewinder', 'Viper Mk III', 'Viper Mk IV']
 SHIPS_HARD = ['Alliance Crusader', 'Alliance Challenger', 'Alliance Chieftain', 'Anaconda', 'Federal Assault Ship', 'Federal Dropship', 'Federal Gunship', 'Fer-de-Lance', 'Imperial Clipper', 'Krait MK II', 'Python', 'Vulture', 'Type-10 Defender']
 BAIT_MESSAGES = ['$Pirate_ThreatTooHigh', '$Pirate_NotEnoughCargo', '$Pirate_OnNoCargoFound']
-LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'SummaryKills': 2, 'SummaryBounties': 1, 'Inactivity': 3}
+LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'SecurityScan': 2, 'SecurityAttack': 3, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'SummaryKills': 2, 'SummaryBounties': 1, 'Inactivity': 3}
 
 # Load config file
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
@@ -98,6 +98,7 @@ class Instance:
 		self.killstime = 0
 		self.kills = 0
 		self.bounties = 0
+		self.lastsecurity = ''
 
 	def reset(self):
 		self.scans = []
@@ -105,6 +106,7 @@ class Instance:
 		self.killstime = 0
 		self.kills = 0
 		self.bounties = 0
+		self.lastsecurity = ''
 
 class Tracking():
 	def __init__(self):
@@ -225,7 +227,13 @@ def processevent(line):
 	match this_json['event']:
 		case 'ShipTargeted' if 'Ship' in this_json:
 			ship = this_json['Ship_Localised'] if 'Ship_Localised' in this_json else this_json['Ship'].title()
-			if not ship in session.scans and (ship in SHIPS_EASY or ship in SHIPS_HARD):
+			rank = '' if not 'PilotRank' in this_json else f' ({this_json['PilotRank']})'
+			if ship != session.lastsecurity and 'PilotName' in this_json and '$ShipName_Police' in this_json['PilotName']:
+				session.lastsecurity = ship
+				logevent(msg_term=f'{Col.WARN}Scanned security{Col.END} ({ship})',
+						msg_discord=f'**Scanned security** ({ship})',
+						emoji='🚨', timestamp=logtime, loglevel=getloglevel('SecurityScan'))
+			elif not ship in session.scans and (ship in SHIPS_EASY or ship in SHIPS_HARD):
 				session.scans.append(ship)
 				if ship in SHIPS_EASY:
 					col = Col.EASY
@@ -235,8 +243,8 @@ def processevent(line):
 					col = Col.HARD
 					log = getloglevel('ScanHard')
 					hard = ' ☠️'
-				logevent(msg_term=f'{col}Scan{Col.END}: {ship}',
-						msg_discord=f'**{ship}**{hard}',
+				logevent(msg_term=f'{col}Scan{Col.END}: {ship}{rank}',
+						msg_discord=f'**{ship}**{hard}{rank}',
 						emoji='🔎', timestamp=logtime, loglevel=log)
 		case 'Bounty':
 			session.scans.clear()
