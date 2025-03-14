@@ -287,6 +287,7 @@ def processevent(line):
 						emoji='📝', timestamp=logtime, loglevel=getloglevel('SummaryBounties'))
 		case 'MissionRedirected' if 'Mission_Massacre' in this_json['Name']:
 			track.missionredirects += 1
+			msg = 'a mission'
 			if track.missions:
 				missions = f'{track.missionredirects}/{len(track.missionsactive)}'
 				if len(track.missionsactive) != track.missionredirects:
@@ -294,10 +295,11 @@ def processevent(line):
 				else:
 					log = getloglevel('MissionsAll')
 					track.missionredirects = 0
+					msg = 'all missions!'
 			else:
 				missions = f'x{track.missionredirects}'
 				log = getloglevel('Missions') if track.missionredirects != setting_missions else getloglevel('MissionsAll')
-			logevent(msg_term=f'Completed kills for a mission ({missions})',
+			logevent(msg_term=f'Completed kills for {msg} ({missions})',
 					emoji='✅', timestamp=logtime, loglevel=log)
 		case 'ReservoirReplenished' if this_json['FuelMain'] < setting_fueltank * FUEL_LOW:
 			if this_json['FuelMain'] < setting_fueltank * FUEL_CRIT:
