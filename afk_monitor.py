@@ -357,6 +357,10 @@ def processevent(line):
 				logevent(msg_term=f'{Col.WARN}Pirate didn\'t engage due to insufficient cargo value{Col.END}',
 			 			msg_discord='**Pirate didn\'t engage due to insufficient cargo value**',
 						emoji='🎣', timestamp=logtime, loglevel=getloglevel('BaitValueLow'))
+			elif 'Police_Attack' in this_json['Message']:
+				logevent(msg_term=f'{Col.BAD}Under attack by security services!{Col.END}',
+			 			msg_discord=f'**Under attack by security services!**',
+						emoji='🚨', timestamp=logtime, loglevel=getloglevel('SecurityAttack'))
 		case 'EjectCargo' if not this_json["Abandoned"] and this_json['Count'] == 1:
 			name = this_json['Type_Localised'] if 'Type_Localised' in this_json else this_json['Type'].title()
 			logevent(msg_term=f'{Col.BAD}Cargo stolen!{Col.END} ({name})',
