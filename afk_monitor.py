@@ -27,6 +27,7 @@ GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
 FUEL_CRIT = 0.1		# 10%
+TRUNC_FACTION = 30
 SHIPS_EASY = ['Adder', 'Asp Explorer', 'Asp Scout', 'Cobra Mk III', 'Cobra Mk IV', 'Diamondback Explorer', 'Diamondback Scout', 'Eagle', 'Imperial Courier', 'Imperial Eagle', 'Krait Phantom', 'Sidewinder', 'Viper Mk III', 'Viper Mk IV']
 SHIPS_HARD = ['Alliance Crusader', 'Alliance Challenger', 'Alliance Chieftain', 'Anaconda', 'Federal Assault Ship', 'Federal Dropship', 'Federal Gunship', 'Fer-de-Lance', 'Imperial Clipper', 'Krait MK II', 'Python', 'Vulture', 'Type-10 Defender']
 BAIT_MESSAGES = ['$Pirate_ThreatTooHigh', '$Pirate_NotEnoughCargo', '$Pirate_OnNoCargoFound']
@@ -223,7 +224,6 @@ def processevent(line):
 		return
 
 	logtime = datetime.fromisoformat(this_json['timestamp']) if 'timestamp' in this_json else None
-
 	match this_json['event']:
 		case 'ShipTargeted' if 'Ship' in this_json:
 			ship = this_json['Ship_Localised'] if 'Ship_Localised' in this_json else this_json['Ship'].title()
@@ -251,12 +251,10 @@ def processevent(line):
 			session.kills +=1
 			session.bounties += this_json['Rewards'][0]['Reward']
 			thiskill = logtime
-			killtime_t = ''
-			killtime_d = ''
+			killtime = ''
 			if session.lastkill:
 				seconds = (thiskill-session.lastkill).total_seconds()
-				killtime_t = f' [+{time_format(seconds)}]'
-				killtime_d = f' **[+{time_format(seconds)}]**'
+				killtime = f' (+{time_format(seconds)})'
 				session.killstime += seconds
 			session.lastkill = logtime
 
@@ -270,10 +268,11 @@ def processevent(line):
 				log = getloglevel('KillHard')
 				hard = ' ☠️'
 			
-			bountyvalue = f' ({this_json['Rewards'][0]['Reward']:,}cr)' if setting_bountyvalue else ''
-			bountyfaction = f' ({this_json['VictimFaction']})' if setting_bountyfaction else ''
-			logevent(msg_term=f"{col}Kill{Col.END}: {ship}{bountyfaction}{bountyvalue}{killtime_t}",
-					msg_discord=f"**{ship}**{hard}{bountyfaction}{bountyvalue}{killtime_d}",
+			bountyvalue = f' [{num_format(this_json['Rewards'][0]['Reward'])} cr]' if setting_bountyvalue else ''
+			bountyfaction = this_json['VictimFaction'] if len(this_json['VictimFaction']) <= TRUNC_FACTION+3 else f'{this_json['VictimFaction'][:TRUNC_FACTION].rstrip()}...'
+			bountyfaction = f' [{bountyfaction}]' if setting_bountyfaction else ''
+			logevent(msg_term=f"{col}Kill{Col.END}: {ship}{killtime}{bountyvalue}{bountyfaction}",
+					msg_discord=f"**{ship}**{hard}{killtime}{bountyvalue}{bountyfaction}",
 					emoji='💥', timestamp=logtime, loglevel=log)
 
 			if session.kills % 10 == 0 and this_json['event'] == 'Bounty':
