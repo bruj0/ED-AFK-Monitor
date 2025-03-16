@@ -11,8 +11,8 @@ MissionTotal = 20
 LowKillRate = 20
 # InactivityMax is time in minutes between journal updates before logging a warning (Default: 15, 0 to disable)
 InactivityMax = 15
-# BountyFaction shows faction name on each kill (Default: true)
-BountyFaction = true
+# BountyFaction shows faction name on each kill (Default: false)
+BountyFaction = false
 # BountyValue shows credits earned on each kill (Default: false)
 BountyValue = false
 

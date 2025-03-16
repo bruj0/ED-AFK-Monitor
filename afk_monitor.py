@@ -272,7 +272,7 @@ def processevent(line):
 			bountyfaction = this_json['VictimFaction'] if len(this_json['VictimFaction']) <= TRUNC_FACTION+3 else f'{this_json['VictimFaction'][:TRUNC_FACTION].rstrip()}...'
 			bountyfaction = f' [{bountyfaction}]' if setting_bountyfaction else ''
 			logevent(msg_term=f"{col}Kill{Col.END}: {ship}{killtime}{bountyvalue}{bountyfaction}",
-					msg_discord=f"**{ship}**{hard}{killtime}{bountyvalue}{bountyfaction}",
+					msg_discord=f"**{ship}{hard}{killtime}**{bountyvalue}{bountyfaction}",
 					emoji='💥', timestamp=logtime, loglevel=log)
 
 			if session.kills % 10 == 0 and this_json['event'] == 'Bounty':
