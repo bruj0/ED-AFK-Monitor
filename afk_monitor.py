@@ -5,6 +5,7 @@ import sys
 from datetime import datetime, timezone
 import tomllib
 import os
+import ctypes
 import re
 import argparse
 try:
@@ -76,6 +77,7 @@ setting_inactivitymax = getconfig('Settings', 'InactivityMax', 15)
 setting_missions = args.missions if args.missions is not None else getconfig('Settings', 'MissionTotal', 20)
 setting_bountyfaction = getconfig('Settings', 'BountyFaction', True)
 setting_bountyvalue = getconfig('Settings', 'BountyValue', False)
+setting_dynamictitle = getconfig('Settings', 'DynamicTitle', True)
 discord_webhook = args.webhook if args.webhook is not None else getconfig('Discord', 'WebhookURL', '')
 discord_user = getconfig('Discord', 'UserID', 0)
 discord_timestamp = getconfig('Discord', 'Timestamp', True)
@@ -108,6 +110,7 @@ class Instance:
 		self.kills = 0
 		self.bounties = 0
 		self.lastsecurity = ''
+		updatetitle()
 
 class Tracking():
 	def __init__(self):
@@ -281,7 +284,7 @@ def processevent(line):
 			logevent(msg_term=f"{col}Kill{Col.END}: {ship}{killtime}{bountyvalue}{bountyfaction}",
 					msg_discord=f"**{ship}{hard}{killtime}**{bountyvalue}{bountyfaction}",
 					emoji='💥', timestamp=logtime, loglevel=log)
-
+			
 			if session.kills % 10 == 0 and this_json['event'] == 'Bounty':
 				avgseconds = session.killstime / (session.kills - 1)
 				kills_hour = round(3600 / avgseconds, 1)
@@ -292,6 +295,8 @@ def processevent(line):
 						emoji='📝', timestamp=logtime, loglevel=log)
 				logevent(msg_term=f'Session bounties: {num_format(session.bounties)} (Avg: {num_format(avgbounty)}/kill | {num_format(bounties_hour)}/hr)',
 						emoji='📝', timestamp=logtime, loglevel=getloglevel('SummaryBounties'))
+			
+			updatetitle()
 		case 'MissionRedirected' if 'Mission_Massacre' in this_json['Name']:
 			track.missionredirects += 1
 			msg = 'a mission'
@@ -301,13 +306,13 @@ def processevent(line):
 					log = getloglevel('Missions')
 				else:
 					log = getloglevel('MissionsAll')
-					track.missionredirects = 0
 					msg = 'all missions!'
 			else:
 				missions = f'x{track.missionredirects}'
 				log = getloglevel('Missions') if track.missionredirects != setting_missions else getloglevel('MissionsAll')
 			logevent(msg_term=f'Completed kills for {msg} ({missions})',
 					emoji='✅', timestamp=logtime, loglevel=log)
+			updatetitle()
 		case 'ReservoirReplenished' if this_json['FuelMain'] < setting_fueltank * FUEL_LOW:
 			if this_json['FuelMain'] < setting_fueltank * FUEL_CRIT:
 				col = Col.BAD
@@ -357,6 +362,7 @@ def processevent(line):
 			logevent(msg_term='Exited to main menu',
 				emoji='🚪', timestamp=logtime, loglevel=2)
 			track.inactivitywarn = False
+			session.reset()
 		case 'LoadGame':
 			ship = this_json['Ship'] if 'Ship_Localised' not in this_json else this_json['Ship_Localised']
 			mode = 'Private' if this_json['GameMode'] == 'Group' else this_json['GameMode']
@@ -391,19 +397,24 @@ def processevent(line):
 			if len(track.missionsactive) > 0: track.missions = True
 			logevent(msg_term=f'Missions loaded (active massacres: {len(track.missionsactive)})',
 					emoji='🎯', timestamp=logtime, loglevel=getloglevel('Missions'))
+			updatetitle()
 		case 'MissionAccepted' if 'Mission_Massacre' in this_json['Name'] and track.missions:
 			track.missionsactive.append(this_json['MissionID'])
 			logevent(msg_term=f'Accepted massacre mission (active: {len(track.missionsactive)})',
 					emoji='🎯', timestamp=logtime, loglevel=getloglevel('Missions'))
+			updatetitle()
 		case 'MissionAbandoned' | 'MissionCompleted' | 'MissionFailed' if track.missions and this_json['MissionID'] in track.missionsactive:
 			track.missionsactive.remove(this_json['MissionID'])
 			event = this_json['event'][7:].lower()
 			logevent(msg_term=f'Massacre mission {event} (active: {len(track.missionsactive)})',
 					emoji='🎯', timestamp=logtime, loglevel=getloglevel('Missions'))
+			updatetitle()
 		case 'Shutdown':
 			logevent(msg_term='Quit to desktop',
 					emoji='🛑', timestamp=logtime, loglevel=2)
-			sys.exit()
+			if __name__ == "__main__": sys.exit()
+		case 'SupercruiseEntry':
+			session.reset()
 	track.lastevent = this_json['event']
 
 def time_format(seconds: int) -> str:
@@ -429,6 +440,20 @@ def num_format(number: int) -> str:
         else:
             return number
 
+def updatetitle():
+	# Title (Windows-only)
+	if setting_dynamictitle and os.name=='nt':
+		missionsactive = len(track.missionsactive) if track.missions else '-'
+
+		if session.kills > 1:
+			kills_hour = round(3600 / (session.killstime / (session.kills - 1)), 1)
+			if session.kills < 20:
+				kills_hour = f'{kills_hour}*'
+		else:
+			kills_hour = '-'
+
+		ctypes.windll.kernel32.SetConsoleTitleW(f'EDAFKM 🎯{track.missionredirects}/{missionsactive} 💥{kills_hour}/h')
+
 def shutdown():
 	if track.totalkills > 1:
 		avgseconds = track.totaltime / (track.totalkills - 1)
@@ -444,6 +469,7 @@ def shutdown():
 			emoji='📕', loglevel=2)
 
 def header():
+	if os.name=='nt': ctypes.windll.kernel32.SetConsoleTitleW(f'ED AFK Monitor v{VERSION}')
 	# Print header
 	title = f'ED AFK Monitor v{VERSION} by CMDR PSIPAB'
 	print(f"{Col.CYAN}{'='*len(title)}{Col.END}")
@@ -455,9 +481,6 @@ def header():
 	print('\nStarting... (Press Ctrl+C to stop)\n')
 
 if __name__ == '__main__':
-	# Title (Windows-only)
-	if os.name=='nt': os.system(f'title ED AFK Monitor v{VERSION}')
-
 	header()
 	discordsend(f'# 💥 ED AFK Monitor 💥\n-# by CMDR PSIPAB ([v{VERSION}]({GITHUB_LINK}))')
 	logevent(msg_term=f'Monitor started ({journal_file})',

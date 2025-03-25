@@ -15,6 +15,8 @@ InactivityMax = 15
 BountyFaction = false
 # BountyValue shows credits earned on each kill (Default: false)
 BountyValue = false
+# DynamicTitle uses the window title to display some info (Default: true, only works on Windows OS)
+DynamicTitle = true
 
 [Discord]
 # Use the settings below to enable Discord webhook integration
