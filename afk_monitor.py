@@ -291,9 +291,9 @@ def processevent(line):
 				avgbounty = session.bounties // session.kills
 				bounties_hour = round(3600 / (session.killstime / session.bounties))
 				log = getloglevel('SummaryKills') if kills_hour > setting_lowkillrate else getloglevel('SummaryKills')+1
-				logevent(msg_term=f'Session kills: {session.kills} (Avg: {time_format(avgseconds)} | {kills_hour}/hr)',
+				logevent(msg_term=f'Session kills: {session.kills} ({kills_hour}/hr | {time_format(avgseconds)}/kill)',
 						emoji='📝', timestamp=logtime, loglevel=log)
-				logevent(msg_term=f'Session bounties: {num_format(session.bounties)} (Avg: {num_format(avgbounty)}/kill | {num_format(bounties_hour)}/hr)',
+				logevent(msg_term=f'Session bounties: {num_format(session.bounties)} ({num_format(bounties_hour)}/hr | {num_format(avgbounty)}/kill)',
 						emoji='📝', timestamp=logtime, loglevel=getloglevel('SummaryBounties'))
 			
 			updatetitle()
@@ -461,9 +461,9 @@ def shutdown():
 		kills_hour = round(3600 / avgseconds, 1)
 		avgbounty = track.totalbounties // track.totalkills
 		bounties_hour = round(3600 / (track.totaltime / track.totalbounties))
-		logevent(msg_term=f'Total kills: {track.totalkills} (Avg: {time_format(avgseconds)} | {kills_hour}/hr)',
+		logevent(msg_term=f'Total kills: {track.totalkills} ({kills_hour}/hr | {time_format(avgseconds)}/kill)',
 				emoji='📝', loglevel=getloglevel('SummaryKills'))
-		logevent(msg_term=f'Total bounties: {num_format(track.totalbounties)} (Avg: {num_format(avgbounty)}/kill | {num_format(bounties_hour)}/hr)',
+		logevent(msg_term=f'Total bounties: {num_format(track.totalbounties)} ({num_format(bounties_hour)}/hr | {num_format(avgbounty)}/kill)',
 				emoji='📝', loglevel=getloglevel('SummaryBounties'))
 	logevent(msg_term=f'Monitor stopped ({journal_file})',
 			msg_discord=f'**Monitor stopped** ({journal_file})',
