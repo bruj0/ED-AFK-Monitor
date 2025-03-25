@@ -23,7 +23,7 @@ def fallover(message):
 # Internals
 DEBUG_MODE = False
 DISCORD_TEST = False
-VERSION = "250318"
+VERSION = "250325"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -177,7 +177,7 @@ def discordsend(message=''):
 	if discord_enabled and message and not discord_test:
 		try:
 			if discord_identity:
-				webhook.send(content=message, username="ED AFK Monitor", avatar_url="https://cdn.discordapp.com/attachments/1339930614064877570/1339931974227460108/t10.png")
+				webhook.send(content=message, username="ED AFK Monitor", avatar_url="https://cdn.discordapp.com/attachments/1339930614064877570/1354083225923883038/t10.png")
 			else:
 				webhook.send(content=message)
 		except Exception as e:
