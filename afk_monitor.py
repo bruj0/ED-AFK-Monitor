@@ -394,7 +394,7 @@ def processevent(line):
 			for mission in this_json['Active']:
 				if 'Mission_Massacre' in mission['Name'] and mission['Expires'] > 0:
 					track.missionsactive.append(mission['MissionID'])
-			if len(track.missionsactive) > 0: track.missions = True
+			track.missions = True
 			logevent(msg_term=f'Missions loaded (active massacres: {len(track.missionsactive)})',
 					emoji='🎯', timestamp=logtime, loglevel=getloglevel('Missions'))
 			updatetitle()
@@ -405,6 +405,7 @@ def processevent(line):
 			updatetitle()
 		case 'MissionAbandoned' | 'MissionCompleted' | 'MissionFailed' if track.missions and this_json['MissionID'] in track.missionsactive:
 			track.missionsactive.remove(this_json['MissionID'])
+			if track.missionredirects > 0: track.missionredirects -= 1
 			event = this_json['event'][7:].lower()
 			logevent(msg_term=f'Massacre mission {event} (active: {len(track.missionsactive)})',
 					emoji='🎯', timestamp=logtime, loglevel=getloglevel('Missions'))
