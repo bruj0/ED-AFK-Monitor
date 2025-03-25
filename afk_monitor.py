@@ -22,7 +22,7 @@ def fallover(message):
 # Internals
 DEBUG_MODE = False
 DISCORD_TEST = False
-VERSION = "250311"
+VERSION = "250318"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
 FUEL_LOW = 0.2		# 20%
@@ -111,6 +111,9 @@ class Instance:
 
 class Tracking():
 	def __init__(self):
+		self.totalkills = 0
+		self.totaltime = 0
+		self.totalbounties = 0
 		self.fighterhull = 0
 		self.logged = 0
 		self.missions = False
@@ -249,13 +252,17 @@ def processevent(line):
 		case 'Bounty':
 			session.scans.clear()
 			session.kills +=1
+			track.totalkills +=1
 			session.bounties += this_json['Rewards'][0]['Reward']
+			track.totalbounties += this_json['Rewards'][0]['Reward']
 			thiskill = logtime
 			killtime = ''
+
 			if session.lastkill:
 				seconds = (thiskill-session.lastkill).total_seconds()
 				killtime = f' (+{time_format(seconds)})'
 				session.killstime += seconds
+				track.totaltime += seconds
 			session.lastkill = logtime
 
 			ship = this_json['Target_Localised'] if 'Target_Localised' in this_json else this_json['Target'].title()
@@ -422,6 +429,20 @@ def num_format(number: int) -> str:
         else:
             return number
 
+def shutdown():
+	if track.totalkills > 1:
+		avgseconds = track.totaltime / (track.totalkills - 1)
+		kills_hour = round(3600 / avgseconds, 1)
+		avgbounty = track.totalbounties // track.totalkills
+		bounties_hour = round(3600 / (track.totaltime / track.totalbounties))
+		logevent(msg_term=f'Total kills: {track.totalkills} (Avg: {time_format(avgseconds)} | {kills_hour}/hr)',
+				emoji='📝', loglevel=getloglevel('SummaryKills'))
+		logevent(msg_term=f'Total bounties: {num_format(track.totalbounties)} (Avg: {num_format(avgbounty)}/kill | {num_format(bounties_hour)}/hr)',
+				emoji='📝', loglevel=getloglevel('SummaryBounties'))
+	logevent(msg_term=f'Monitor stopped ({journal_file})',
+			msg_discord=f'**Monitor stopped** ({journal_file})',
+			emoji='📕', loglevel=2)
+
 def header():
 	# Print header
 	title = f'ED AFK Monitor v{VERSION} by CMDR PSIPAB'
@@ -464,9 +485,7 @@ if __name__ == '__main__':
 				track.lastactivity = datetime.now()
 
 		except (KeyboardInterrupt, SystemExit):
-			logevent(msg_term=f'Monitor stopped ({journal_file})',
-					msg_discord=f'**Monitor stopped** ({journal_file})',
-					emoji='📕', loglevel=2)
+			shutdown()
 			if sys.argv[0].count('\\') > 1:
 				input('\nPress ENTER to exit')	# This is *still* horrible
 				sys.exit()
