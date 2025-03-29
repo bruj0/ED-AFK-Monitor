@@ -53,9 +53,9 @@ FuelLow = 2             # Fuel level low (under 20%)
 FuelCritical = 3        # Fuel level critical (under 10%)
 Missions = 2            # Kills completed for a mission
 MissionsAll = 3         # Kills completed for all missions
-SummaryKills = 2        # Summary of kills every 10 bounties
-SummaryBounties = 1     # Summary of bounties every 10
-SummaryMerits = 0       # Summary of powerplay merits every 10
+SummaryKills = 2        # Summary of kills every 10 and at close
+SummaryBounties = 1     # Summary of credits earned from bounties
+SummaryMerits = 0       # Summary of powerplay merits gained
 Inactivity = 3          # Warning of no recent journal activity
 
 # Custom profiles (advanced)

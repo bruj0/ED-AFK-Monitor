@@ -17,15 +17,16 @@ except ImportError:
 
 def fallover(message):
 	print(message)
-	input('Press ENTER to exit')
+	if sys.argv[0].count('\\') > 1: input('Press ENTER to exit')
 	sys.exit()
 
 # Internals
 DEBUG_MODE = False
 DISCORD_TEST = False
-VERSION = "250325"
+VERSION = "250327"
 GITHUB_LINK = "https://github.com/PsiPab/ED-AFK-Monitor"
 DUPE_MAX = 5
+MAX_FILES = 10
 FUEL_LOW = 0.2		# 20%
 FUEL_CRIT = 0.1		# 10%
 TRUNC_FACTION = 30
@@ -33,6 +34,24 @@ SHIPS_EASY = ['Adder', 'Asp Explorer', 'Asp Scout', 'Cobra Mk III', 'Cobra Mk IV
 SHIPS_HARD = ['Alliance Crusader', 'Alliance Challenger', 'Alliance Chieftain', 'Anaconda', 'Federal Assault Ship', 'Federal Dropship', 'Federal Gunship', 'Fer-de-Lance', 'Imperial Clipper', 'Krait MK II', 'Python', 'Vulture', 'Type-10 Defender']
 BAIT_MESSAGES = ['$Pirate_ThreatTooHigh', '$Pirate_NotEnoughCargo', '$Pirate_OnNoCargoFound']
 LOGLEVEL_DEFAULTS = {'ScanEasy': 1, 'ScanHard': 2, 'KillEasy': 2, 'KillHard': 2, 'FighterHull': 2, 'FighterDown': 3, 'ShipShields': 3, 'ShipHull': 3, 'Died': 3, 'CargoLost': 3, 'BaitValueLow': 2, 'SecurityScan': 2, 'SecurityAttack': 3, 'FuelLow': 2, 'FuelCritical': 3, 'Missions': 2, 'MissionsAll': 3, 'SummaryKills': 2, 'SummaryBounties': 1, 'SummaryMerits': 0, 'Inactivity': 3}
+
+class Col:
+	CYAN = '\033[96m'
+	YELL = '\033[93m'
+	EASY = '\x1b[38;5;157m'
+	HARD = '\x1b[38;5;217m'
+	WARN = '\x1b[38;5;215m'
+	BAD = '\x1b[38;5;15m\x1b[48;5;1m'
+	GOOD = '\x1b[38;5;15m\x1b[48;5;2m'
+	WHITE = '\033[97m'
+	END = '\x1b[0m'
+
+# Print header
+title = f'ED AFK Monitor v{VERSION} by CMDR PSIPAB'
+print(f"{Col.CYAN}{'='*len(title)}{Col.END}")
+print(f'{Col.CYAN}{title}{Col.END}')
+print(f"{Col.CYAN}{'='*len(title)}{Col.END}\n")
+if os.name=='nt': ctypes.windll.kernel32.SetConsoleTitleW(f'ED AFK Monitor v{VERSION}')
 
 # Load config file
 if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
@@ -50,6 +69,7 @@ parser = argparse.ArgumentParser(
     prog='ED AFK Monitor',
     description='Live monitoring of Elite Dangerous AFK sessions to terminal and Discord')
 parser.add_argument('-p', '--profile', help='Custom profile for config settings')
+parser.add_argument('-f', '--fileselect', action='store_true', default=None, help='Show list of recent journals to chose from')
 parser.add_argument('-j', '--journal', help='Override for path to journal folder')
 parser.add_argument('-w', '--webhook', help='Override for Discord webhook URL')
 parser.add_argument('-m', '--missions', type=int, help='Set number of missions remaining')
@@ -69,6 +89,7 @@ def getconfig(category, setting, default=None):
 
 # Get settings from config unless argument
 profile = args.profile if args.profile is not None else None
+setting_fileselect = args.fileselect if args.fileselect is not None else False
 setting_journal = args.journal if args.journal is not None else getconfig('Settings', 'JournalFolder')
 setting_utc = getconfig('Settings', 'UseUTC', False)
 setting_fueltank = getconfig('Settings', 'FuelTank', 64)
@@ -135,36 +156,67 @@ class Tracking():
 session = Instance()
 track = Tracking()
 
-class Col:
-	CYAN = '\033[96m'
-	YELL = '\033[93m'
-	EASY = '\x1b[38;5;157m'
-	HARD = '\x1b[38;5;217m'
-	WARN = '\x1b[38;5;215m'
-	BAD = '\x1b[38;5;15m\x1b[48;5;1m'
-	GOOD = '\x1b[38;5;15m\x1b[48;5;2m'
-	WHITE = '\033[97m'
-	END = '\x1b[0m'
-
 # Set journal folder
 if not setting_journal:
 	journal_dir = Path.home() / 'Saved Games' / 'Frontier Developments' / 'Elite Dangerous'
 else:
 	journal_dir = Path(setting_journal)
-
-# Get latest journal file
 if not journal_dir.is_dir():
 	fallover(f"Directory {journal_dir} not found")
 
-journal_file = ''
+# Get latest journal or select from list of recents
+journals = []
+journal_file = None
 reg = r'^Journal\.\d{4}-\d{2}-\d{2}T\d{6}\.\d{2}\.log$'
 for entry in sorted(journal_dir.iterdir(), reverse=True):
-	if entry.is_file() and re.search(reg, entry.name):
-		journal_file = entry.name
-		break
+	if entry.is_file() and bool(re.search(reg, entry.name)):
+		if not setting_fileselect:
+			journal_file = entry.name
+			break
+		else:
+			journals.append(entry.name)
+			if len(journals) == MAX_FILES: break
 
-if not journal_file:
-	fallover(f"Directory {journal_dir} does not contain any journal file")
+print(f'{Col.YELL}Journal folder:{Col.END} {journal_dir}')
+
+if not journal_file and len(journals) == 0:
+	fallover(f"Directory does not contain any journal file")
+
+# Journal selector
+if setting_fileselect:
+	print(f'\nLatest journals:')
+
+	# Get commander name from each journal and output list
+	commander = None
+	for i, filename in enumerate(journals, start=1):
+		with open(Path(journal_dir / filename)) as file:
+			for line in file:
+				entry = json.loads(line)
+				if entry['event'] == 'Commander':
+					commander =  entry['Name']
+					break
+
+		if not commander: commander = '[Unknown]'
+		num = f'{i:>{len(str(len(journals)))}}'
+		print(f'{num} | {filename} | CMDR {commander}')
+
+	print('\nInput journal number to load')
+	selection = input('(ENTER for latest or any other input to quit)\n')
+	if selection:
+		try:
+			selection = int(selection)
+			if 1 <= selection <= MAX_FILES:
+				journal_file = journals[selection-1]
+			else:
+				fallover(f"Invalid number, exiting...")
+		except ValueError:
+			fallover(f"Exiting...")
+	else:
+		journal_file = journals[0]
+
+print(f'{Col.YELL}Journal file:{Col.END} {journal_file}')
+if profile: print(f'{Col.YELL}Config profile:{Col.END} {profile}')
+print('\nStarting... (Press Ctrl+C to stop)\n')
 
 # Check webhook appears valid before starting
 reg = r'^https:\/\/(?:canary\.|ptb\.)?discord(?:app)?\.com\/api\/webhooks\/\d+\/[A-z0-9_-]+$'
@@ -484,19 +536,13 @@ def shutdown():
 			emoji='📕', loglevel=2)
 
 def header():
-	if os.name=='nt': ctypes.windll.kernel32.SetConsoleTitleW(f'ED AFK Monitor v{VERSION}')
 	# Print header
-	title = f'ED AFK Monitor v{VERSION} by CMDR PSIPAB'
-	print(f"{Col.CYAN}{'='*len(title)}{Col.END}")
-	print(f'{Col.CYAN}{title}{Col.END}')
-	print(f"{Col.CYAN}{'='*len(title)}{Col.END}\n")
 	print(f'{Col.YELL}Journal folder:{Col.END} {journal_dir}')
 	print(f'{Col.YELL}Latest journal:{Col.END} {journal_file}')
 	if profile: print(f'{Col.YELL}Config profile:{Col.END} {profile}')
 	print('\nStarting... (Press Ctrl+C to stop)\n')
 
 if __name__ == '__main__':
-	header()
 	discordsend(f'# 💥 ED AFK Monitor 💥\n-# by CMDR PSIPAB ([v{VERSION}]({GITHUB_LINK}))')
 	logevent(msg_term=f'Monitor started ({journal_file})',
 			msg_discord=f'**Monitor started** ({journal_file})',
