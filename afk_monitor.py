@@ -512,7 +512,7 @@ def updatetitle():
 	if setting_dynamictitle and os.name=='nt':
 		missionsactive = len(track.missionsactive) if track.missions else '-'
 
-		if session.kills > 1:
+		if session.kills > 1 and session.killstime > 0:
 			kills_hour = round(3600 / (session.killstime / (session.kills - 1)), 1)
 			if session.kills < 20:
 				kills_hour = f'{kills_hour}*'
